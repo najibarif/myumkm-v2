@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { verifyToken } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 import prisma from "@/lib/prisma";
 
 // Define the expected parameter type
@@ -66,16 +66,11 @@ export const PATCH: RouteHandler = async (
 ) => {
   const { id } = params;
   try {
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader && authHeader.split(" ")[1];
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized - No token provided" }, { status: 401 });
-    }
-
-    const decoded = await verifyToken(token);
-    if (!decoded?.userId) {
-      return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const profile = await prisma.businessprofile.findUnique({
@@ -87,7 +82,7 @@ export const PATCH: RouteHandler = async (
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    if (profile.user.id !== decoded.userId) {
+    if (profile.user.id !== user.id) {
       return NextResponse.json({ error: "Forbidden - You can only update your own profile" }, { status: 403 });
     }
 
@@ -117,16 +112,11 @@ export const DELETE: RouteHandler = async (
 ) => {
   const { id } = params;
   try {
-    const authHeader = request.headers.get("authorization");
-    const token = authHeader && authHeader.split(" ")[1];
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized - No token provided" }, { status: 401 });
-    }
-
-    const decoded = await verifyToken(token);
-    if (!decoded?.userId) {
-      return NextResponse.json({ error: "Unauthorized - Invalid token" }, { status: 401 });
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const profile = await prisma.businessprofile.findUnique({
@@ -138,7 +128,7 @@ export const DELETE: RouteHandler = async (
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    if (profile.user.id !== decoded.userId) {
+    if (profile.user.id !== user.id) {
       return NextResponse.json({ error: "Forbidden - You can only delete your own profile" }, { status: 403 });
     }
 

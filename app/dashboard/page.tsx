@@ -3,11 +3,10 @@
 import { cn } from "@/lib/utils"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Package, Users, FileText, DollarSign, MessageSquare } from "lucide-react"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
-import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { DashboardLayout } from "@/components/layouts/dashboard-layout";
 
 interface DashboardStats {
   totalProducts: number;
@@ -33,18 +32,14 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const { getAuthHeaders } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
 
-        const token = localStorage.getItem('authToken');
-        if (!token) return;
-
         const headers = {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         };
 
@@ -84,11 +79,10 @@ export default function DashboardPage() {
         ]);
 
         // Hitung total pesan dari semua conversation
-        const totalMessages = Array.isArray(chat.conversations)
-          ? chat.conversations.reduce((acc: number, convo: any) => {
-            // Jika kamu ingin hitung 1 pesan per conversation saja
-            // bisa pakai 1 saja, atau jika ada array messages, gunakan convo.messages.length
-            // Saat ini dari data yang kamu tunjukkan, setiap convo punya lastMessage
+        // Adjust logic based on actual response structure
+        const conversations = chat.conversations || chat || [];
+        const totalMessages = Array.isArray(conversations)
+          ? conversations.reduce((acc: number, convo: any) => {
             return acc + (convo.lastMessage ? 1 : 0);
           }, 0)
           : 0;
@@ -108,8 +102,8 @@ export default function DashboardPage() {
           ? posts.slice(0, 4).map((p: any) => ({
             id: p.id,
             title: p.title,
-            createdAt: p.createdAt,
-            authorName: p.author?.businessName || 'Unknown Author'
+            createdAt: p.createdAt || new Date().toISOString(),
+            authorName: p.author?.businessName || p.author?.userName || 'Unknown Author'
           }))
           : [];
 
@@ -124,6 +118,7 @@ export default function DashboardPage() {
 
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
+        setError('Gagal memuat data dashboard.');
       } finally {
         setIsLoading(false);
       }
@@ -167,139 +162,121 @@ export default function DashboardPage() {
   // Display error message if any
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader />
-        <div className="flex">
-          <DashboardSidebar />
-          <main className="flex-1 p-6">
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
-              <strong className="font-bold">Error! </strong>
-              <span className="block sm:inline">{error}</span>
-              <p className="mt-2">Mengarahkan ke halaman login...</p>
-            </div>
-          </main>
+      <DashboardLayout>
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
+          <strong className="font-bold">Error! </strong>
+          <span className="block sm:inline">{error}</span>
+          <p className="mt-2">Mengarahkan ke halaman login...</p>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader />
-        <div className="flex">
-          <DashboardSidebar />
-          <main className="flex-1 p-6">
-            <div className="space-y-8">
-              <div>
-                <h1 className="text-3xl font-bold">Dashboard</h1>
-                <p className="text-muted-foreground">Memuat data...</p>
-              </div>
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                {[...Array(4)].map((_, i) => (
-                  <Card key={i}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <div className="h-4 w-20 bg-muted animate-pulse rounded" />
-                      <div className="h-4 w-4 bg-muted animate-pulse rounded" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-8 w-16 bg-muted animate-pulse rounded mb-2" />
-                      <div className="h-3 w-24 bg-muted animate-pulse rounded" />
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </main>
+      <DashboardLayout>
+        <div className="space-y-8">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">Memuat data...</p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+                  <div className="h-4 w-4 bg-muted animate-pulse rounded" />
+                </CardHeader>
+                <CardContent>
+                  <div className="h-8 w-16 bg-muted animate-pulse rounded mb-2" />
+                  <div className="h-3 w-24 bg-muted animate-pulse rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader />
-      <div className="flex">
-        <DashboardSidebar />
-        <main className="flex-1 p-6">
-          <div className="space-y-8">
-            <div>
-              <h1 className="text-3xl font-bold">Dashboard</h1>
-              <p className="text-muted-foreground">Selamat datang kembali! Berikut ringkasan aktivitas UMKM Anda.</p>
-            </div>
+    <DashboardLayout>
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold">Dashboard</h1>
+          <p className="text-muted-foreground">Selamat datang kembali! Berikut ringkasan aktivitas UMKM Anda.</p>
+        </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {statsCards.map((stat, index) => (
-                <Card key={index}>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                    <stat.icon className={cn("h-4 w-4", stat.color)} />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{stat.value}</div>
-                    <p className="text-xs text-muted-foreground">
-                      <span className="text-green-600">{stat.change}</span> dari bulan lalu
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {statsCards.map((stat, index) => (
+            <Card key={index}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                <stat.icon className={cn("h-4 w-4", stat.color)} />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground">
+                  <span className="text-green-600">{stat.change}</span> dari bulan lalu
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Produk Terbaru</CardTitle>
-                  <CardDescription>Produk terbaru yang ditambahkan ke marketplace</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {stats?.recentProducts && stats.recentProducts.length > 0 ? (
-                      stats.recentProducts.map((product) => (
-                        <div key={product.id} className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium">{product.title}</p>
-                            <p className="text-xs text-muted-foreground">{product.category}</p>
-                          </div>
-                          <div className="text-sm font-medium text-green-600">
-                            Rp {product.price.toLocaleString()}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground">Belum ada produk</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Produk Terbaru</CardTitle>
+              <CardDescription>Produk terbaru yang ditambahkan ke marketplace</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {stats?.recentProducts && stats.recentProducts.length > 0 ? (
+                  stats.recentProducts.map((product) => (
+                    <div key={product.id} className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium">{product.title}</p>
+                        <p className="text-xs text-muted-foreground">{product.category}</p>
+                      </div>
+                      <div className="text-sm font-medium text-green-600">
+                        Rp {product.price.toLocaleString()}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Belum ada produk</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Postingan Terbaru</CardTitle>
-                  <CardDescription>Postingan terbaru di forum komunitas</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {stats?.recentPosts && stats.recentPosts.length > 0 ? (
-                      stats.recentPosts.map((post) => (
-                        <div key={post.id} className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm font-medium line-clamp-1">{post.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {post.authorName} • {new Date(post.createdAt).toLocaleDateString('id-ID')}
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground">Belum ada postingan</p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </main>
+          <Card>
+            <CardHeader>
+              <CardTitle>Postingan Terbaru</CardTitle>
+              <CardDescription>Postingan terbaru di forum komunitas</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {stats?.recentPosts && stats.recentPosts.length > 0 ? (
+                  stats.recentPosts.map((post) => (
+                    <div key={post.id} className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium line-clamp-1">{post.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {post.authorName} • {new Date(post.createdAt).toLocaleDateString('id-ID')}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">Belum ada postingan</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </DashboardLayout>
   )
 }

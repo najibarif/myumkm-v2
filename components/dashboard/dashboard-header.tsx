@@ -1,6 +1,5 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Bell, Search, User as UserIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -16,85 +15,18 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-}
+import { useAuth } from "@/hooks/useAuth"
 
 export function DashboardHeader() {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const { user, loading: isLoading, logout } = useAuth();
   const router = useRouter();
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-          console.error('No auth token found');
-          setIsLoading(false);
-          return;
-        }
-        
-        const res = await fetch("/api/auth/me", {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        } else if (res.status === 401) {
-          console.error('Unauthorized - clearing auth data and redirecting to login');
-          // Clear all auth data
-          localStorage.removeItem('authToken');
-          sessionStorage.clear();
-          // Clear all cookies
-          document.cookie.split(';').forEach(c => {
-            document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
-          });
-          // Force a full page reload to clear any cached auth state
-          window.location.href = '/auth/login';
-        }
-      } catch (error) {
-        console.error("Failed to fetch user:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchUser().finally(() => setInitialLoad(false));
-  }, []);
 
   const handleLogout = async () => {
     try {
-      // Clear all auth data first
-      setUser(null);
-      
-      // Clear all storage
-      localStorage.removeItem('authToken');
-      sessionStorage.clear();
-      
-      // Clear all cookies
-      document.cookie.split(';').forEach(c => {
-        document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
-      });
-      
-      // Call server-side logout (but don't wait for it)
-      fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      }).catch(console.error);
-      
-      // Force a hard redirect to ensure complete cleanup
-      window.location.href = '/';
+      await logout();
+      router.push('/');
     } catch (error) {
       console.error('Error during logout:', error);
-      // Still try to redirect even if there's an error
-      window.location.href = '/';
     }
   };
 
@@ -121,8 +53,8 @@ export function DashboardHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="/placeholder-user.jpg" alt={user?.name ?? "User"} />
-                  <AvatarFallback>{user?.name?.[0].toUpperCase() ?? "U"}</AvatarFallback>
+                  <AvatarImage src="/placeholder-user.jpg" alt={user?.user_metadata?.full_name ?? user?.email ?? "User"} />
+                  <AvatarFallback>{(user?.user_metadata?.full_name?.[0] ?? user?.email?.[0] ?? "U").toUpperCase()}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
@@ -135,7 +67,7 @@ export function DashboardHeader() {
               ) : user ? (
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.name}</p>
+                    <p className="text-sm font-medium leading-none">{user.user_metadata?.full_name ?? "User"}</p>
                     <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                   </div>
                 </DropdownMenuLabel>
@@ -147,7 +79,7 @@ export function DashboardHeader() {
                 <UserIcon className="mr-2 h-4 w-4" />
                 <span>Profil</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/settings')}>
                 <span>Pengaturan</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -161,3 +93,4 @@ export function DashboardHeader() {
     </header>
   )
 }
+

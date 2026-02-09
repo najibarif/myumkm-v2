@@ -42,14 +42,14 @@ export default function LoginForm() {
     setError('');
 
     try {
-      const result = await login(email, password);
+      const { user } = await login(email, password);
 
-      if (result?.success) {
+      if (user) {
         toast({ title: 'Login berhasil', description: 'Mengalihkan ke dashboard...' });
         router.replace(callbackUrl);
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan';
+      const errorMessage = err instanceof Error ? err.message : 'Login gagal. Periksa email dan password.';
       setError(errorMessage);
       toast({ title: 'Login gagal', description: errorMessage, variant: 'destructive' });
     } finally {

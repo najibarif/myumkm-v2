@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
+import { createClient } from '@/utils/supabase/server';
 
 // GET /api/profiles - Get all public profiles
 export async function GET() {
@@ -39,31 +39,21 @@ export async function GET() {
 // POST /api/profiles - Create a new business profile
 export async function POST(request: Request) {
   try {
-    // Get the token from the Authorization header
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized - No token provided' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const token = authHeader.split(' ')[1];
-    const decoded = await verifyToken(token);
-    
-    if (!decoded?.userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized - Invalid token' },
-        { status: 401 }
-      );
-    }
+    const existingProfile = await prisma.businessprofile.findUnique({
+      where: { userId: user.id },
+    });
 
     const data = await request.json();
-    
-    // Check if user already has a business profile
-    const existingProfile = await prisma.businessprofile.findUnique({
-      where: { userId: decoded.userId },
-    });
 
     if (existingProfile) {
       return NextResponse.json(
@@ -75,7 +65,7 @@ export async function POST(request: Request) {
     // Validate required fields
     const requiredFields = ['businessName', 'category'];
     const missingFields = requiredFields.filter(field => !data[field]);
-    
+
     if (missingFields.length > 0) {
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(', ')}` },
@@ -91,7 +81,7 @@ export async function POST(request: Request) {
         description: data.description || null,
         category: data.category,
         location: data.location || null,
-        userId: decoded.userId,
+        userId: user.id,
         updatedAt: new Date(),
       },
     });

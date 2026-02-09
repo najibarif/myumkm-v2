@@ -60,7 +60,7 @@ export default function MarketplacePage() {
   const [selectedCategory, setSelectedCategory] = useState("");
 
   // Auth hook
-  const { user: authUser, token: authToken, loading: authLoading } = useAuth();
+  const { user: authUser, loading: authLoading } = useAuth();
 
   // Load user + profiles
   useEffect(() => {
@@ -70,7 +70,7 @@ export default function MarketplacePage() {
         if (authUser) {
           setCurrentUser({
             id: authUser.id,
-            name: authUser.name || "",
+            name: authUser.user_metadata.full_name || authUser.email || "Pengguna",
             email: authUser.email || "",
           });
         } else {
@@ -81,7 +81,6 @@ export default function MarketplacePage() {
           "Cache-Control": "no-cache, no-store, must-revalidate",
           Pragma: "no-cache",
         };
-        if (authToken) headers["Authorization"] = `Bearer ${authToken}`;
 
         const res = await fetch("/api/profiles", {
           headers,
@@ -103,7 +102,7 @@ export default function MarketplacePage() {
     };
 
     if (!authLoading) loadData();
-  }, [authUser, authToken, authLoading]);
+  }, [authUser, authLoading]);
 
   // Filter profiles
   useEffect(() => {
@@ -139,7 +138,7 @@ export default function MarketplacePage() {
 
   // Hubungi
   const handleContact = async (profile: BusinessProfile) => {
-    if (!currentUser || !authToken) {
+    if (!authUser) {
       toast.error("Harap login untuk mengirim pesan");
       return;
     }
@@ -151,7 +150,7 @@ export default function MarketplacePage() {
     }
 
     // Check if it's the current user's own profile
-    if (targetUserId === currentUser.id) {
+    if (currentUser && targetUserId === currentUser.id) {
       toast.error("Tidak dapat mengirim pesan ke diri sendiri");
       return;
     }
@@ -163,9 +162,8 @@ export default function MarketplacePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           recipientId: targetUserId,
           // Include profile info to create the conversation immediately
           profile: {
@@ -191,7 +189,7 @@ export default function MarketplacePage() {
         // Fallback ke halaman chat biasa jika tidak ada ID
         window.location.href = '/chat';
       }
-      
+
       toast.success("Percakapan berhasil dibuat");
     } catch (err) {
       console.error("Gagal membuka percakapan:", err);
@@ -235,8 +233,8 @@ export default function MarketplacePage() {
               <button
                 onClick={() => handleCategoryChange("")}
                 className={`px-4 py-2 rounded-full text-sm font-medium ${!selectedCategory
-                    ? "bg-primary text-white"
-                    : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                  ? "bg-primary text-white"
+                  : "bg-gray-100 hover:bg-gray-200 text-gray-800"
                   }`}
               >
                 Semua Kategori
@@ -246,8 +244,8 @@ export default function MarketplacePage() {
                   key={c}
                   onClick={() => handleCategoryChange(c)}
                   className={`px-4 py-2 rounded-full text-sm font-medium ${selectedCategory === c
-                      ? "bg-primary text-white"
-                      : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                    ? "bg-primary text-white"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-800"
                     }`}
                 >
                   {c}

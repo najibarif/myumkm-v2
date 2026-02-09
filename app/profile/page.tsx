@@ -36,28 +36,21 @@ export default function ProfilePage() {
   const fetchProfile = async () => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       console.log('Fetching profile from /api/profile');
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        console.error('No auth token found');
-        // window.location.href = '/login';
-        return;
-      }
 
       const response = await fetch('/api/profile', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
         },
-        credentials: 'include', // Include cookies
-        cache: 'no-store' // Don't cache the request
+        // cookies are sent automatically by browser
+        cache: 'no-store'
       });
-      
+
       console.log('Profile fetch response status:', response.status);
-      
+
       // First check if we got a valid JSON response
       let data;
       try {
@@ -68,9 +61,9 @@ export default function ProfilePage() {
         console.error('Response text:', text);
         throw new Error('Invalid JSON response from server');
       }
-      
+
       console.log('Profile data received:', data);
-      
+
       if (!response.ok) {
         // Handle 401 Unauthorized specifically
         if (response.status === 401) {
@@ -92,8 +85,8 @@ export default function ProfilePage() {
       // Ensure marketplacelisting is always an array
       const profileData = {
         ...data,
-        marketplacelisting: Array.isArray(data.marketplacelisting) 
-          ? data.marketplacelisting 
+        marketplacelisting: Array.isArray(data.marketplacelisting)
+          ? data.marketplacelisting
           : []
       };
 
@@ -103,7 +96,7 @@ export default function ProfilePage() {
       console.error('Profile fetch error:', errorMessage);
       setError(errorMessage);
       setProfile(null);
-      
+
       // Show error message for unauthorized access
       if (errorMessage.includes('Unauthorized')) {
         setError('Anda perlu login untuk melihat profil bisnis');
@@ -208,7 +201,7 @@ export default function ProfilePage() {
         <div className="text-center py-16 border-2 border-dashed rounded-lg">
           <h3 className="text-lg font-medium">Anda belum memiliki Profil Bisnis</h3>
           <p className="text-sm text-muted-foreground mb-4">Buat profil untuk mulai berkolaborasi.</p>
-          <Button 
+          <Button
             onClick={() => setIsProfileDialogOpen(true)}
             disabled={isLoading}
           >
@@ -239,7 +232,7 @@ export default function ProfilePage() {
               <DialogTrigger asChild>
                 <Button variant="outline">{profile ? "Edit Profil" : "Buat Profil Bisnis"}</Button>
               </DialogTrigger>
-              <DialogContent 
+              <DialogContent
                 description={profile ? "Form untuk mengedit profil bisnis Anda" : "Form untuk membuat profil bisnis baru"}
               >
                 <DialogHeader>

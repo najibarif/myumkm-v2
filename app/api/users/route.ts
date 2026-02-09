@@ -1,25 +1,16 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { verifyToken } from '@/lib/auth';
+import { createClient } from '@/utils/supabase/server';
 
 // GET /api/users - Get all users (for admin dashboard)
 export async function GET(request: Request) {
   try {
-    // Verify the request is authenticated
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader) {
-      return NextResponse.json(
-        { error: 'Unauthorized - No token provided' },
-        { status: 401 }
-      );
-    }
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    const token = authHeader.split(' ')[1];
-    const decoded = await verifyToken(token);
-    
-    if (!decoded?.userId) {
+    if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized - Invalid token' },
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }

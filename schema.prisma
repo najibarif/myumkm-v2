@@ -7,99 +7,104 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model businessprofile {
-  id                 String               @id
-  businessName       String
-  description        String?
-  category           String
-  location           String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime
-  userId             String               @unique(map: "BusinessProfile_userId_key")
-  user               user                 @relation(fields: [userId], references: [id], map: "BusinessProfile_userId_fk")
-  forumpost          forumpost[]
-  marketplacelisting marketplacelisting[]
+model business_profiles {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  business_name        String
+  description          String?
+  category             String
+  location             String?
+  user_id              String                 @unique @db.Uuid
+  created_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @default(now()) @db.Timestamptz(6)
+  users                users                  @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_business_user")
+  marketplace_listings marketplace_listings[]
 }
 
-model conversation {
-  id        String    @id @default(cuid())
-  deleted   Boolean   @default(false)
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  messages  message[]
-  users     user[]    @relation("userconversations")
+model conversation_users {
+  conversation_id String        @db.Uuid
+  user_id         String        @db.Uuid
+  conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_conversation_user_conversation")
+  users           users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_conversation_user_user")
+
+  @@id([conversation_id, user_id])
 }
 
-model forumcomment {
-  id        String    @id
-  content   String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime
-  authorId  String
-  postId    String
-
-  user      user      @relation(fields: [authorId], references: [id], map: "ForumComment_authorId_fk")
-  forumpost forumpost @relation(fields: [postId], references: [id], map: "ForumComment_postId_fk")
-
-  @@index([authorId], map: "ForumComment_authorId_idx")
-  @@index([postId], map: "ForumComment_postId_idx")
+model conversations {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  deleted            Boolean?             @default(false)
+  deleted_at         DateTime?            @db.Timestamptz(6)
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  conversation_users conversation_users[]
+  messages           messages[]
 }
 
-model forumpost {
-  id              String          @id
-  title           String
-  content         String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime
-  authorId        String
+model forum_comments {
+  id          String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content     String
+  author_id   String      @db.Uuid
+  post_id     String      @db.Uuid
+  created_at  DateTime?   @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime?   @default(now()) @db.Timestamptz(6)
+  forum_posts forum_posts @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_forum_comment_post")
+  users       users       @relation(fields: [author_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_forum_comment_user")
 
-  forumcomment    forumcomment[]
-  businessprofile businessprofile @relation(fields: [authorId], references: [id], map: "ForumPost_authorId_fk")
-
-  @@index([authorId], map: "ForumPost_authorId_idx")
+  @@index([author_id], map: "idx_forum_comments_author")
+  @@index([post_id], map: "idx_forum_comments_post")
 }
 
-model marketplacelisting {
-  id              String          @id
-  title           String
-  description     String
-  price           Float
-  category        String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @default(now())
-  authorId        String
-
-  businessprofile businessprofile @relation(fields: [authorId], references: [id], map: "MarketplaceListing_authorId_fk")
-
-  @@index([authorId], map: "MarketplaceListing_authorId_idx")
-}
-
-model message {
-  id             String        @id @default(cuid())
+model forum_posts {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String
   content        String
-  deleted        Boolean       @default(false)
-  deletedAt      DateTime?
-  createdAt      DateTime      @default(now())
-  authorId       String
-  conversationId String?
+  author_id      String           @db.Uuid
+  created_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime?        @default(now()) @db.Timestamptz(6)
+  forum_comments forum_comments[]
+  users          users            @relation(fields: [author_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_forum_post_user")
 
-  user           user          @relation(fields: [authorId], references: [id], onDelete: Cascade, map: "Message_authorId_fk")
-  conversation   conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@index([authorId], map: "Message_authorId_idx")
-  @@index([conversationId], map: "Message_conversationId_idx")
+  @@index([author_id], map: "idx_forum_posts_author")
 }
 
-model user {
-  id              String           @id
-  name            String
-  email           String           @unique(map: "User_email_key")
-  password        String
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime
-  businessprofile businessprofile?
-  forumcomment    forumcomment[]
-  messages        message[]
-  conversations   conversation[]   @relation("userconversations")
+model marketplace_listings {
+  id                String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title             String
+  description       String
+  price             Decimal           @db.Decimal
+  category          String
+  owner_id          String            @db.Uuid
+  created_at        DateTime?         @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?         @default(now()) @db.Timestamptz(6)
+  business_profiles business_profiles @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_marketplace_business")
+
+  @@index([owner_id], map: "idx_marketplace_owner")
+}
+
+model messages {
+  id              String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content         String
+  deleted         Boolean?      @default(false)
+  deleted_at      DateTime?     @db.Timestamptz(6)
+  author_id       String        @db.Uuid
+  conversation_id String        @db.Uuid
+  created_at      DateTime?     @default(now()) @db.Timestamptz(6)
+  users           users         @relation(fields: [author_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_message_author")
+  conversations   conversations @relation(fields: [conversation_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_message_conversation")
+
+  @@index([author_id], map: "idx_messages_author")
+  @@index([conversation_id], map: "idx_messages_conversation")
+}
+
+model users {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name               String
+  email              String               @unique
+  password           String
+  created_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
+  business_profiles  business_profiles?
+  conversation_users conversation_users[]
+  forum_comments     forum_comments[]
+  forum_posts        forum_posts[]
+  messages           messages[]
 }

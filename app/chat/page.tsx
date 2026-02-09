@@ -15,18 +15,26 @@ import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 const withAuth = (WrappedComponent: React.ComponentType) => {
   return function AuthenticatedComponent() {
     const router = useRouter();
-    const { user, token } = useAuth();
+    const { user, loading } = useAuth();
 
     useEffect(() => {
-      if (!user) {
+      if (!loading && !user) {
         // router.push("/login");
       }
-    }, [user, router]);
+    }, [user, loading, router]);
 
-    if (!user || !token) {
+    if (loading) {
       return (
         <div className="min-h-screen flex items-center justify-center">
           <p>Loading...</p>
+        </div>
+      );
+    }
+
+    if (!user) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <p>Please login to access this page.</p>
         </div>
       );
     }
@@ -64,7 +72,7 @@ interface Conversation {
 function ChatPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user: authUser, getToken } = useAuth();
+  const { user: authUser } = useAuth();
 
   // State
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -78,7 +86,7 @@ function ChatPage() {
     if (!authUser) return null;
     return {
       id: authUser.id,
-      name: authUser.name || "Saya",
+      name: authUser.user_metadata.full_name || "Saya",
       email: authUser.email,
       role: "USER",
     };
@@ -98,19 +106,11 @@ function ChatPage() {
   }, [messages]);
 
   // ================== API ==================
-  const getAuthToken = useCallback(() => {
-    const currentToken = getToken();
-    if (!currentToken) {
-      console.error("No authentication token available");
-      return null;
-    }
-    return currentToken;
-  }, [getToken]);
+
 
   const fetchMessages = useCallback(async (conversationId: string) => {
     console.log("fetchMessages called with conversationId:", conversationId);
-    const token = getAuthToken();
-    if (!token) return;
+    if (!authUser) return;
 
     try {
       setSelectedConversation(prev =>
@@ -118,7 +118,6 @@ function ChatPage() {
       );
 
       const res = await fetch(`/api/chat/messages?conversationId=${conversationId}`, {
-        headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
 
@@ -144,16 +143,14 @@ function ChatPage() {
       console.error("Error fetching messages:", err);
       toast.error("Gagal memuat pesan");
     }
-  }, [getAuthToken]);
+  }, [authUser]);
 
   const fetchConversations = useCallback(async () => {
     console.log("Fetching conversations...");
-    const token = getAuthToken();
-    if (!token) return;
+    if (!authUser) return;
 
     try {
       const res = await fetch("/api/chat", {
-        headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
 
@@ -171,7 +168,7 @@ function ChatPage() {
       console.error("Error fetching conversations:", err);
       toast.error("Gagal memuat percakapan");
     }
-  }, [getAuthToken, selectedConversation, fetchMessages]);
+  }, [authUser, selectedConversation, fetchMessages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,14 +186,12 @@ function ChatPage() {
     setNewMessage("");
 
     try {
-      const token = getAuthToken();
-      if (!token) return;
+      if (!authUser) return;
 
       const res = await fetch("/api/chat/messages", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           content: tempMessage.content,

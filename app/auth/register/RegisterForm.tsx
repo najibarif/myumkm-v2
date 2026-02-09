@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/components/ui/use-toast";
 
 export default function RegisterForm() {
   const [name, setName] = useState("");
@@ -20,6 +22,7 @@ export default function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams?.get('callbackUrl') || '/dashboard';
+  const { signUp } = useAuth();
 
   const validateForm = () => {
     if (!name || !email || !password || !confirmPassword) {
@@ -49,16 +52,17 @@ export default function RegisterForm() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+      const { user } = await signUp(email, password, {
+        data: {
+          full_name: name,
+        }
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal mendaftar. Silakan coba lagi.");
+      if (user) {
+        toast({ title: 'Registrasi berhasil', description: 'Silakan cek email untuk verifikasi.' });
+        router.push(`/auth/login?registered=true&callbackUrl=${encodeURIComponent(callbackUrl)}`);
+      }
 
-      router.push(`/auth/login?registered=true&callbackUrl=${encodeURIComponent(callbackUrl)}`);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan. Silakan coba lagi.");
       setIsLoading(false);

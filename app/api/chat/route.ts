@@ -1,28 +1,17 @@
 import { NextResponse, NextRequest } from "next/server";
-import * as jose from "jose";
 import prisma from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
 
 // =========================
-// JWT helper
+// Auth helper
 // =========================
-async function verifyToken(token: string) {
-  try {
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
-    const { payload } = await jose.jwtVerify(token, secret);
-    return { userId: payload.userId as string };
-  } catch (error) {
-    console.error("Token verification failed:", error);
-    return null;
-  }
-}
-
 async function getCurrentUserId(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) return null;
-  const token = authHeader.split(" ")[1];
-  const decoded = await verifyToken(token);
-  return decoded?.userId ?? null;
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user?.id ?? null;
 }
+
+
 
 function pickOtherUserId(body: any, request: NextRequest) {
   const fromBody = body?.recipientId || body?.userId;
@@ -33,27 +22,27 @@ function pickOtherUserId(body: any, request: NextRequest) {
 }
 
 async function getOrCreateConversation(currentUserId: string, otherUserId: string) {
-  let convo = await prisma.conversation.findFirst({
+  let convo = await prisma.conversations.findFirst({
     where: {
       AND: [
-        { users: { some: { id: currentUserId } } },
-        { users: { some: { id: otherUserId } } },
+        { conversation_users: { some: { user_id: currentUserId } } },
+        { conversation_users: { some: { user_id: otherUserId } } },
       ],
     },
-    include: { users: true },
+    include: { conversation_users: { include: { users: true } } },
   });
 
   if (!convo) {
-    const recipient = await prisma.user.findUnique({ where: { id: otherUserId } });
+    const recipient = await prisma.users.findUnique({ where: { id: otherUserId } });
     if (!recipient) throw new Error("RECIPIENT_NOT_FOUND");
 
-    convo = await prisma.conversation.create({
+    convo = await prisma.conversations.create({
       data: {
-        users: {
-          connect: [{ id: currentUserId }, { id: otherUserId }],
+        conversation_users: {
+          create: [{ user_id: currentUserId }, { user_id: otherUserId }],
         },
       },
-      include: { users: true },
+      include: { conversation_users: { include: { users: true } } },
     });
   }
 
@@ -77,9 +66,9 @@ export async function POST(request: NextRequest) {
     let conversation;
 
     if (conversationId) {
-      conversation = await prisma.conversation.findFirst({
-        where: { id: conversationId, users: { some: { id: currentUserId } } },
-        include: { users: true },
+      conversation = await prisma.conversations.findFirst({
+        where: { id: conversationId, conversation_users: { some: { user_id: currentUserId } } },
+        include: { conversation_users: { include: { users: true } } },
       });
       if (!conversation) {
         return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
@@ -102,13 +91,14 @@ export async function POST(request: NextRequest) {
 
     let message = null;
     if (content && typeof content === "string" && content.trim()) {
-      message = await prisma.message.create({
+      message = await prisma.messages.create({
         data: {
           content: content.trim(),
-          conversationId: conversation.id,
-          authorId: currentUserId,
+          conversation_id: conversation.id,
+          author_id: currentUserId,
         },
-        include: { user: { select: { id: true, name: true, email: true } } },
+        include: { users: { select: { id: true, name: true, email: true } } },
+
       });
     }
 

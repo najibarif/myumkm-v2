@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
+import { createClient } from "@/utils/supabase/server";
 
 export async function GET() {
   try {
-    const products = await prisma.marketplacelisting.findMany({
+    const products = await prisma.marketplace_listings.findMany({
       include: {
-        businessprofile: {
+        business_profiles: {
           select: {
-            businessName: true,
+            business_name: true,
             category: true,
             location: true,
-            user: {
+            users: {
               select: {
                 name: true
               }
@@ -21,11 +20,24 @@ export async function GET() {
         }
       },
       orderBy: {
-        createdAt: "desc",
+        created_at: "desc",
       },
     });
-    
-    return NextResponse.json(products);
+
+    // Map back to camelCase for frontend compatibility if needed
+    const mappedProducts = products.map((p: any) => ({
+      ...p,
+      // Frontend expects 'businessprofile' with camelCase fields
+      businessprofile: {
+        businessName: p.business_profiles?.business_name,
+        category: p.business_profiles?.category,
+        location: p.business_profiles?.location,
+        user: p.business_profiles?.users
+      },
+      createdAt: p.created_at
+    }));
+
+    return NextResponse.json(mappedProducts);
   } catch (error) {
     console.error("Failed to fetch marketplace products:", error);
     return NextResponse.json(
@@ -37,67 +49,63 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { title, description, price, category, authorId } = await request.json();
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!title || !description || !price || !category || !authorId) {
-      return NextResponse.json({ 
+    if (authError || !user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { title, description, price, category } = await request.json();
+
+    if (!title || !description || !price || !category) {
+      return NextResponse.json({
         error: "Missing required fields",
-        details: { 
-          title: !title, 
-          description: !description, 
-          price: !price, 
-          category: !category, 
-          authorId: !authorId 
-        }
       }, { status: 400 });
     }
 
     // Verify business profile exists
-    const businessProfile = await prisma.businessprofile.findUnique({
-      where: { userId: authorId },
+    const businessProfile = await prisma.business_profiles.findUnique({
+      where: { user_id: user.id },
       select: { id: true }
     });
 
     if (!businessProfile) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: "Business profile not found",
         details: "You need to create a business profile first"
       }, { status: 404 });
     }
 
-    // Generate a unique ID for the new listing
-    const listingId = `ml_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
     try {
       // First create the marketplace listing
-      await prisma.marketplacelisting.create({
+      const newListing = await prisma.marketplace_listings.create({
         data: {
-          id: listingId,
           title: title.trim(),
           description: description.trim(),
           price: parseFloat(price),
           category: category.trim(),
-          authorId: businessProfile.id, // This is the business profile ID
-          createdAt: new Date(),
-          updatedAt: new Date()
+          owner_id: businessProfile.id,
+          created_at: new Date(),
+          updated_at: new Date()
         }
       });
 
       // Then fetch the complete product with relations
-      const productWithRelations = await prisma.marketplacelisting.findUnique({
-        where: { id: listingId },
+      const productWithRelations = await prisma.marketplace_listings.findUnique({
+        where: { id: newListing.id },
         include: {
-          businessprofile: {
+          business_profiles: {
             select: {
               id: true,
-              businessName: true,
+              business_name: true,
               category: true,
               location: true,
-              user: {
+              users: {
                 select: {
-                  id: true,
                   name: true,
-                  email: true
+                  email: true,
+                  id: true
                 }
               }
             }
@@ -105,25 +113,27 @@ export async function POST(request: Request) {
         }
       });
 
-      return NextResponse.json({
-        success: true,
-        message: "Product created successfully",
-        data: productWithRelations
-      }, { status: 201 });
+      const mappedProduct = productWithRelations ? {
+        ...productWithRelations,
+        createdAt: productWithRelations.created_at,
+        businessprofile: {
+          ...productWithRelations.business_profiles,
+          businessName: productWithRelations.business_profiles?.business_name,
+          user: productWithRelations.business_profiles?.users
+        }
+      } : null;
+
+      return NextResponse.json(mappedProduct);
 
     } catch (error) {
-      console.error("Error creating marketplace listing:", error);
-      return NextResponse.json(
-        { error: "Failed to create marketplace listing" },
-        { status: 500 }
-      );
+      console.error("Error creating product:", error);
+      return NextResponse.json({
+        error: "Failed to create product",
+        details: error instanceof Error ? error.message : "Unknown error"
+      }, { status: 500 });
     }
-
   } catch (error) {
-    console.error("Failed to create marketplace product:", error);
-    return NextResponse.json(
-      { error: "Failed to create product" },
-      { status: 500 }
-    );
+    console.error("API Error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
