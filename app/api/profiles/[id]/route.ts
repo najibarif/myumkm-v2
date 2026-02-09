@@ -22,22 +22,22 @@ export const GET: RouteHandler = async (
 ) => {
   const { id } = params;
   try {
-    const profile = await prisma.businessprofile.findUnique({
+    const profile = await prisma.business_profiles.findUnique({
       where: { id },
       include: {
-        user: {
+        users: {
           select: { id: true, name: true, email: true },
         },
-        marketplacelisting: {
+        marketplace_listings: {
           select: {
             id: true,
             title: true,
             description: true,
             price: true,
             category: true,
-            createdAt: true,
+            created_at: true,
           },
-          orderBy: { createdAt: "desc" },
+          orderBy: { created_at: "desc" },
           take: 50,
         },
       },
@@ -73,25 +73,25 @@ export const PATCH: RouteHandler = async (
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const profile = await prisma.businessprofile.findUnique({
+    const profile = await prisma.business_profiles.findUnique({
       where: { id },
-      include: { user: true },
+      include: { users: true },
     });
 
     if (!profile) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    if (profile.user.id !== user.id) {
+    if (profile.users.id !== user.id) {
       return NextResponse.json({ error: "Forbidden - You can only update your own profile" }, { status: 403 });
     }
 
     const data = await request.json();
 
-    const updatedProfile = await prisma.businessprofile.update({
+    const updatedProfile = await prisma.business_profiles.update({
       where: { id },
       data: {
-        businessName: data.businessName ?? profile.businessName,
+        business_name: data.businessName ?? profile.business_name,
         description: data.description ?? profile.description,
         category: data.category ?? profile.category,
         location: data.location ?? profile.location,
@@ -119,20 +119,20 @@ export const DELETE: RouteHandler = async (
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const profile = await prisma.businessprofile.findUnique({
+    const profile = await prisma.business_profiles.findUnique({
       where: { id },
-      include: { user: true },
+      include: { users: true },
     });
 
     if (!profile) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    if (profile.user.id !== user.id) {
+    if (profile.users.id !== user.id) {
       return NextResponse.json({ error: "Forbidden - You can only delete your own profile" }, { status: 403 });
     }
 
-    await prisma.businessprofile.delete({ where: { id } });
+    await prisma.business_profiles.delete({ where: { id } });
     return new Response(null, { status: 204 });
   } catch (error) {
     console.error("Error deleting profile:", error);

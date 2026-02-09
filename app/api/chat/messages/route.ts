@@ -43,146 +43,99 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let conversation;
+    let conversation = null;
 
-    try {
-      // If we have a conversationId, try to find the conversation
-      if (conversationId) {
-        conversation = await prisma.conversations.findUnique({
-          where: { id: conversationId },
-          include: { conversation_users: { include: { users: true } } }
-        });
-
-        if (!conversation) {
-          return new NextResponse(
-            JSON.stringify({ error: 'Conversation not found' }),
-            {
-              status: 404,
-              headers: { 'Content-Type': 'application/json' }
-            }
-          );
-        }
-      }
-      // If no conversationId, we need to create a new conversation
-      else if (recipientId) {
-        // Check if recipient exists
-        const recipient = await prisma.users.findUnique({
-          where: { id: recipientId }
-        });
-
-        if (!recipient) {
-          return new NextResponse(
-            JSON.stringify({ error: 'Recipient not found' }),
-            {
-              status: 404,
-              headers: { 'Content-Type': 'application/json' }
-            }
-          );
-        }
-
-        // Check if a conversation already exists between these users
-        const existingConversation = await prisma.conversations.findFirst({
-          where: {
-            AND: [
-              {
-                conversation_users: {
-                  some: {
-                    user_id: user.id
-                  }
-                }
-              },
-              {
-                conversation_users: {
-                  some: {
-                    user_id: recipientId
-                  }
-                }
-              }
-            ]
-          },
-          include: {
-            conversation_users: {
-              include: {
-                users: true
-              }
-            }
-          }
-        });
-
-        if (existingConversation) {
-          conversation = existingConversation;
-        } else {
-          // Create new conversation
-          conversation = await prisma.conversations.create({
-            data: {
-              conversation_users: {
-                create: [
-                  { user_id: user.id },
-                  { user_id: recipientId }
-                ]
-              }
-            },
-            include: {
-              conversation_users: {
-                include: {
-                  users: true
-                }
-              }
-            }
-          });
-        }
-      }
-
-      // Create the message
-      const newMessage = await prisma.messages.create({
-        data: {
-          content,
-          conversation_id: conversation.id,
-          author_id: user.id
+    if (conversationId) {
+      conversation = await prisma.conversations.findFirst({
+        where: {
+          id: conversationId,
+          conversation_users: { some: { user_id: user.id } },
         },
         include: {
-          users: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          }
-        }
+          conversation_users: { include: { users: true } },
+        },
+      });
+      if (!conversation) {
+        return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+      }
+    } else if (recipientId) {
+      const recipient = await prisma.users.findUnique({
+        where: { id: recipientId },
       });
 
-      // Prepare response data
-      // Transform Prisma result to match expected frontend structure if needed
-      // Assuming frontend expects snake_case from DB or we need to map to camelCase
-      // The previous code returned `user` (singular) which implies camelCase expectation on frontend?
-      // Step 651 view showed `include: { user: ... }`
-      // So I should map `users` to `user` in the response to be safe.
+      if (!recipient) {
+        return NextResponse.json({ error: "Recipient not found" }, { status: 404 });
+      }
 
-      const responseData = {
-        ...newMessage,
-        user: newMessage.users
-      };
+      const existingConversation = await prisma.conversations.findFirst({
+        where: {
+          AND: [
+            { conversation_users: { some: { user_id: user.id } } },
+            { conversation_users: { some: { user_id: recipientId } } },
+          ],
+        },
+        include: {
+          conversation_users: { include: { users: true } },
+        },
+      });
 
-      return NextResponse.json(responseData);
-
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-      return new NextResponse(
-        JSON.stringify({ error: 'Database operation failed', details: dbError instanceof Error ? dbError.message : String(dbError) }),
-        {
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
+      if (existingConversation) {
+        conversation = existingConversation;
+      } else {
+        conversation = await prisma.conversations.create({
+          data: {
+            conversation_users: {
+              create: [{ user_id: user.id }, { user_id: recipientId }],
+            },
+          },
+          include: {
+            conversation_users: { include: { users: true } },
+          },
+        });
+      }
+    } else {
+      return NextResponse.json(
+        { error: "conversationId atau recipientId/userId diperlukan" },
+        { status: 400 }
       );
     }
-  } catch (error) {
-    console.error('API Error:', error);
-    return new NextResponse(
-      JSON.stringify({ error: 'Internal Server Error' }),
+
+    if (!conversation) {
+      return NextResponse.json({ error: "Failed to resolve conversation" }, { status: 500 });
+    }
+
+    // Create the message
+    const newMessage = await prisma.messages.create({
+      data: {
+        content: content.trim(),
+        conversation_id: conversation.id,
+        author_id: user.id,
+      },
+      include: {
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    const responseData = {
+      ...newMessage,
+      user: newMessage.users,
+    };
+
+    return NextResponse.json(responseData);
+  } catch (dbError) {
+    console.error("Database error:", dbError);
+    return NextResponse.json(
       {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+        error: "Database operation failed",
+        details: dbError instanceof Error ? dbError.message : String(dbError),
+      },
+      { status: 500 }
     );
   }
 }

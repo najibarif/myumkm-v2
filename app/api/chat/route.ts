@@ -67,8 +67,13 @@ export async function POST(request: NextRequest) {
 
     if (conversationId) {
       conversation = await prisma.conversations.findFirst({
-        where: { id: conversationId, conversation_users: { some: { user_id: currentUserId } } },
-        include: { conversation_users: { include: { users: true } } },
+        where: {
+          id: conversationId,
+          conversation_users: { some: { user_id: currentUserId } },
+        },
+        include: {
+          conversation_users: { include: { users: true } },
+        },
       });
       if (!conversation) {
         return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
@@ -98,7 +103,6 @@ export async function POST(request: NextRequest) {
           author_id: currentUserId,
         },
         include: { users: { select: { id: true, name: true, email: true } } },
-
       });
     }
 
@@ -125,25 +129,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ conversations: [conversation] });
     }
 
-    const raw = await prisma.conversation.findMany({
-      where: { users: { some: { id: currentUserId } } },
+    const raw = await prisma.conversations.findMany({
+      where: { conversation_users: { some: { user_id: currentUserId } } },
       include: {
-        users: { select: { id: true, name: true } },
+        conversation_users: {
+          include: {
+            users: { select: { id: true, name: true } },
+          },
+        },
         messages: {
-          include: { user: { select: { id: true, name: true } } },
-          orderBy: { createdAt: "desc" },
+          include: { users: { select: { id: true, name: true } } },
+          orderBy: { created_at: "desc" },
           take: 1,
         },
       },
-      orderBy: { updatedAt: "desc" },
+      orderBy: { updated_at: "desc" },
     });
 
     const conversations = raw.map((c) => ({
       id: c.id,
-      users: c.users,
+      users: c.conversation_users.map((cu) => cu.users),
       lastMessage: c.messages[0] ?? null,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt,
+      createdAt: c.created_at,
+      updatedAt: c.updated_at,
     }));
 
     return NextResponse.json({ conversations });
@@ -172,12 +180,15 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "Conversation ID is required" }, { status: 400 });
     }
 
-    const conversation = await prisma.conversation.findFirst({
-      where: { id: conversationId, users: { some: { id: currentUserId } } },
+    const conversation = await prisma.conversations.findFirst({
+      where: {
+        id: conversationId,
+        conversation_users: { some: { user_id: currentUserId } },
+      },
       include: {
         messages: {
-          include: { user: { select: { id: true, name: true } } },
-          orderBy: { createdAt: "asc" },
+          include: { users: { select: { id: true, name: true } } },
+          orderBy: { created_at: "asc" },
         },
       },
     });

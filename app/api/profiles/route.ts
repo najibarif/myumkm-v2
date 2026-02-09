@@ -5,15 +5,15 @@ import { createClient } from '@/utils/supabase/server';
 // GET /api/profiles - Get all public profiles
 export async function GET() {
   try {
-    const profiles = await prisma.businessprofile.findMany({
+    const profiles = await prisma.business_profiles.findMany({
       select: {
         id: true,
-        businessName: true,
+        business_name: true,
         description: true,
         category: true,
         location: true,
-        createdAt: true,
-        user: {
+        created_at: true,
+        users: {
           select: {
             id: true,
             name: true,
@@ -21,7 +21,7 @@ export async function GET() {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
 
     const response = NextResponse.json(profiles);
@@ -49,8 +49,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const existingProfile = await prisma.businessprofile.findUnique({
-      where: { userId: user.id },
+    const existingProfile = await prisma.business_profiles.findUnique({
+      where: { user_id: user.id },
     });
 
     const data = await request.json();
@@ -74,15 +74,15 @@ export async function POST(request: Request) {
     }
 
     // Create new business profile with all required fields
-    const profile = await prisma.businessprofile.create({
+    const profile = await prisma.business_profiles.create({
       data: {
         id: crypto.randomUUID(),
-        businessName: data.businessName,
+        business_name: data.businessName,
         description: data.description || null,
         category: data.category,
         location: data.location || null,
-        userId: user.id,
-        updatedAt: new Date(),
+        user_id: user.id,
+        updated_at: new Date(),
       },
     });
 

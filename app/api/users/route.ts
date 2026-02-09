@@ -16,15 +16,15 @@ export async function GET(request: Request) {
     }
 
     // Get all users (only basic info for the dashboard)
-    const users = await prisma.user.findMany({
+    const users = await prisma.users.findMany({
       select: {
         id: true,
         name: true,
         email: true,
-        createdAt: true,
-        updatedAt: true,
+        created_at: true,
+        updated_at: true,
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { created_at: 'desc' },
     });
 
     const response = NextResponse.json(users);
