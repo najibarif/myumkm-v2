@@ -32,7 +32,7 @@ export function CTASection() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" variant="secondary" className="text-base" asChild>
-              <Link href="/register">
+              <Link href="/auth/register">
                 Daftar Gratis Sekarang
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
@@ -42,7 +42,9 @@ export function CTASection() {
               variant="outline"
               className="text-base bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600 hover:border-white"
             >
-              Hubungi Tim Sales
+              <Link href="https://wa.me/6285723465738">
+                Hubungi Tim Sales
+              </Link>
             </Button>
           </div>
 
