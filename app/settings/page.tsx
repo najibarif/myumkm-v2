@@ -31,7 +31,7 @@ export default function SettingsPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Pengaturan</h1>
                     <p className="text-muted-foreground">
-                        Kelola profil akun dan preferensi tampilan Anda.
+                        Kelola profil akun Anda di sini.
                     </p>
                 </div>
                 <Separator />
@@ -40,7 +40,6 @@ export default function SettingsPage() {
                     <TabsList>
                         <TabsTrigger value="account">Akun</TabsTrigger>
                         <TabsTrigger value="profile">Profil</TabsTrigger>
-                        <TabsTrigger value="appearance">Tampilan</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="account">
@@ -94,33 +93,6 @@ export default function SettingsPage() {
 
                                 <div className="flex justify-end">
                                     <Button>Simpan Perubahan</Button>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    <TabsContent value="appearance">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Tampilan</CardTitle>
-                                <CardDescription>
-                                    Sesuaikan tampilan aplikasi dengan preferensi Anda.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between rounded-lg border p-4 shadow-sm">
-                                        <div className="space-y-0.5">
-                                            <Label className="text-base">Tema Gelap</Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                Aktifkan mode gelap untuk mengurangi ketegangan mata.
-                                            </p>
-                                        </div>
-                                        {/* ThemeToggle component usually handles this globally, maybe just a placeholder or hint here */}
-                                        <div className="text-sm text-muted-foreground italic">
-                                            Gunakan tombol tema di header untuk mengganti tema.
-                                        </div>
-                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

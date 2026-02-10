@@ -10,7 +10,10 @@ export const metadata: Metadata = {
   title: "My UMKM - Platform Terbaik untuk Pelaku UMKM",
   description:
     "Platform lengkap untuk mengelola UMKM Anda dengan fitur manajemen inventaris, edukasi bisnis, dan toko online.",
-  generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({

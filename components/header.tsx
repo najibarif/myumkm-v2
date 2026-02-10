@@ -18,7 +18,7 @@ export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { user, loading: isLoading, logout } = useAuth()
   const [isMounted, setIsMounted] = useState(false)
-  
+
   // Set isMounted to true after component mounts
   useEffect(() => {
     setIsMounted(true)
@@ -26,15 +26,19 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
+      <div className="container flex h-16 items-center px-12">
         {/* Logo on the left */}
         <div className="flex-1 md:flex-none">
-          <Link href="/" className="flex items-center space-x-2">
-            <Store className="h-6 w-6" />
-            <span className="font-bold">My UMKM</span>
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 group-hover:bg-blue-700 transition-colors">
+              <Store className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              My UMKM
+            </span>
           </Link>
         </div>
-        
+
         {/* Centered navigation */}
         <div className="hidden flex-1 justify-center md:flex">
           <nav className="flex items-center gap-10">
@@ -178,9 +182,9 @@ export function Header() {
                   </Button>
                 </div>
               ) : (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
+                <Button
+                  variant="ghost"
+                  size="sm"
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                   onClick={async () => {
                     setIsMenuOpen(false);

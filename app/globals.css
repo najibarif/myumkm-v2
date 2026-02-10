@@ -72,6 +72,14 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
+
+  .glass-card {
+    @apply bg-white/70 dark:bg-slate-950/70 backdrop-blur-md border border-white/20 dark:border-slate-800/20 shadow-xl;
+  }
+
+  .hero-gradient {
+    @apply bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700;
+  }
 }
 
 /* Custom scrollbar */
