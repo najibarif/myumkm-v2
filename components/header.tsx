@@ -5,7 +5,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { Menu, X, Store, User, LogOut } from "lucide-react"
-import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/useAuth"
 import {
   DropdownMenu,
@@ -25,15 +24,15 @@ export function Header() {
   }, [])
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center px-12">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center px-4 md:px-12 max-w-7xl mx-auto">
         {/* Logo on the left */}
         <div className="flex-1 md:flex-none">
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 group-hover:bg-blue-700 transition-colors">
-              <Store className="h-5 w-5 text-white" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-600 group-hover:bg-blue-700 transition-colors">
+              <Store className="h-4 w-4 text-white" strokeWidth={2} />
             </div>
-            <span className="font-bold text-xl tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+            <span className="font-bold text-lg tracking-tight text-foreground group-hover:text-blue-600 transition-colors">
               My UMKM
             </span>
           </Link>
@@ -41,45 +40,45 @@ export function Header() {
 
         {/* Centered navigation */}
         <div className="hidden flex-1 justify-center md:flex">
-          <nav className="flex items-center gap-10">
+          <nav className="flex items-center gap-8">
             <Link
               href="/"
-              className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-blue-600"
             >
               Beranda
             </Link>
             <Link
               href="/marketplace"
-              className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-blue-600"
             >
               Marketplace
             </Link>
             <Link
               href="/forum"
-              className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-blue-600"
             >
               Forum
             </Link>
             <Link
               href="/tentang"
-              className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              className="flex items-center text-sm font-medium text-muted-foreground transition-colors hover:text-blue-600"
             >
               Tentang
             </Link>
           </nav>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <div className="hidden md:block">
             <ThemeToggle />
           </div>
 
           {!isMounted ? null : !user ? (
             <div className="hidden md:flex items-center gap-2">
-              <Button variant="ghost" asChild>
+              <Button variant="ghost" className="rounded-full text-sm font-medium hover:text-blue-600" asChild>
                 <Link href="/auth/login">Masuk</Link>
               </Button>
-              <Button asChild>
+              <Button className="rounded-full text-sm font-medium bg-blue-600 text-white hover:bg-blue-700" asChild>
                 <Link href="/auth/register">Daftar</Link>
               </Button>
             </div>
@@ -87,7 +86,7 @@ export function Header() {
             <div className="hidden md:flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Button variant="outline" className="relative h-8 w-8 rounded-full">
                     <User className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -124,33 +123,33 @@ export function Header() {
       </div>
 
       {isMenuOpen && (
-        <div className="border-t md:hidden">
-          <div className="container flex flex-col gap-4 py-4">
+        <div className="border-t border-border/40 md:hidden bg-background">
+          <div className="container flex flex-col gap-4 py-4 px-4">
             <nav className="grid gap-2">
               <Link
                 href="/"
-                className="flex items-center py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                className="flex items-center py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-blue-600"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Beranda
               </Link>
               <Link
                 href="/marketplace"
-                className="flex items-center py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                className="flex items-center py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-blue-600"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Marketplace
               </Link>
               <Link
                 href="/forum"
-                className="flex items-center py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                className="flex items-center py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-blue-600"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Forum
               </Link>
               <Link
                 href="/tentang"
-                className="flex items-center py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                className="flex items-center py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-blue-600"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Tentang
@@ -158,7 +157,7 @@ export function Header() {
               {user && (
                 <Link
                   href="/profile"
-                  className="flex items-center py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+                  className="flex items-center py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-blue-600"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Profil Saya
@@ -166,7 +165,7 @@ export function Header() {
               )}
             </nav>
 
-            <div className="flex items-center justify-between pt-4 border-t">
+            <div className="flex items-center justify-between pt-4 border-t border-border/40">
               <div className="flex items-center">
                 <span className="text-sm text-muted-foreground">Mode Gelap</span>
                 <ThemeToggle className="ml-2" />
@@ -174,10 +173,10 @@ export function Header() {
 
               {!isLoading && !user ? (
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm" asChild>
+                  <Button variant="ghost" size="sm" className="rounded-full hover:text-blue-600" asChild>
                     <Link href="/auth/login">Masuk</Link>
                   </Button>
-                  <Button size="sm" asChild>
+                  <Button size="sm" className="rounded-full bg-blue-600 text-white hover:bg-blue-700" asChild>
                     <Link href="/auth/register">Daftar</Link>
                   </Button>
                 </div>
@@ -185,7 +184,7 @@ export function Header() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 rounded-full"
                   onClick={async () => {
                     setIsMenuOpen(false);
                     await logout();

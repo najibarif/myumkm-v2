@@ -1,75 +1,96 @@
-import { Card, CardContent } from "@/components/ui/card"
+"use client";
+
+import { useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Star } from "lucide-react"
+import { animate, inView, hover, stagger } from "motion";
 
 const testimonials = [
   {
     name: "Sari Dewi",
-    role: "Pemilik Toko Kue Sari",
+    role: "Toko Kue Sari",
     avatar: "/images/avatar-male.webp",
-    content:
-      "My UMKM benar-benar mengubah cara saya mengelola bisnis. Sekarang saya bisa fokus pada produksi karena semua administrasi sudah terotomatisasi.",
-    rating: 5,
+    content: "My UMKM mengubah cara saya berbisnis. Semua administrasi terotomatisasi sempurna.",
   },
   {
     name: "Budi Santoso",
-    role: "Pengusaha Fashion",
+    role: "Fashion",
     avatar: "/images/avatar-male.webp",
-    content:
-      "Fitur toko online di My UMKM sangat mudah digunakan. Penjualan online saya meningkat 300% dalam 3 bulan pertama!",
-    rating: 5,
+    content: "Fitur toko online yang minimalis & efisien. Penjualan naik 300% dalam 3 bulan.",
   },
   {
     name: "Maya Putri",
-    role: "Pemilik Warung Makan",
+    role: "Warung Makan",
     avatar: "/images/avatar-male.webp",
-    content:
-      "Laporan analitik yang disediakan sangat membantu saya memahami pola pembelian pelanggan. Recommended banget!",
-    rating: 5,
+    content: "Analitiknya sangat presisi untuk memahami pola pembelian pelanggan setia.",
   },
 ]
 
 export function TestimonialsSection() {
-  return (
-    <section className="py-16 md:py-24 lg:py-32">
-      <div className="container px-4">
-        <div className="text-center space-y-4 mb-16">
-          <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm bg-yellow-50 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-300">
-            ⭐ Testimoni
-          </div>
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">Apa Kata Mereka?</h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Dengarkan cerita sukses dari para pelaku UMKM yang telah merasakan manfaat bergabung dengan My UMKM.
-          </p>
-        </div>
+  const containerRef = useRef<HTMLElement>(null);
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+  useEffect(() => {
+    try {
+      if (containerRef.current) {
+        const items = Array.from(containerRef.current.querySelectorAll(".testi-item"));
+        
+        items.forEach(item => {
+          (item as HTMLElement).style.opacity = '0';
+          (item as HTMLElement).style.transform = 'translateY(80px) skewY(5deg)';
+        });
+
+        inView(containerRef.current, () => {
+          if (items.length) {
+            animate(items,
+              { opacity: [0, 1], y: [80, 0], skewY: [5, 0] },
+              { delay: stagger(0.2), duration: 1, type: "spring", stiffness: 80, damping: 20 }
+            );
+          }
+        }, { margin: "-100px" });
+
+        // Grayscale to color on hover
+        items.forEach(item => {
+          const avatar = item.querySelector('.testi-avatar');
+          if (avatar) {
+            hover(item, () => {
+              animate(avatar, { filter: "grayscale(0%)", scale: 1.1 }, { duration: 0.4 });
+              return () => animate(avatar, { filter: "grayscale(100%)", scale: 1 }, { duration: 0.4 });
+            });
+          }
+        });
+      }
+    } catch (e) {
+      if (containerRef.current) {
+        const items = containerRef.current.querySelectorAll(".testi-item");
+        items.forEach(item => {
+          (item as HTMLElement).style.opacity = '1';
+          (item as HTMLElement).style.transform = 'none';
+        });
+      }
+    }
+  }, []);
+
+  return (
+    <section ref={containerRef} className="py-24 lg:py-32 bg-background overflow-hidden border-t border-border">
+      <div className="container px-4 md:px-8 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-16 md:gap-8">
           {testimonials.map((testimonial, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-center space-x-1 mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  ))}
+            <div key={index} className="testi-item flex flex-col items-start opacity-0" style={{ transformOrigin: "bottom left" }}>
+              <p className="text-2xl md:text-3xl font-serif text-foreground leading-tight tracking-tight mb-8">
+                "{testimonial.content}"
+              </p>
+              <div className="flex items-center space-x-4 mt-auto">
+                <Avatar className="h-12 w-12 border border-border testi-avatar grayscale transition-all duration-500">
+                  <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
+                  <AvatarFallback className="bg-muted text-foreground font-medium">
+                    {testimonial.name.split(" ").map((n) => n[0]).join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="font-semibold text-foreground text-sm uppercase tracking-widest">{testimonial.name}</div>
+                  <div className="text-xs text-muted-foreground">{testimonial.role}</div>
                 </div>
-                <p className="text-muted-foreground mb-6 leading-relaxed">"{testimonial.content}"</p>
-                <div className="flex items-center space-x-3">
-                  <Avatar>
-                    <AvatarImage src={testimonial.avatar || "/placeholder.svg"} alt={testimonial.name} />
-                    <AvatarFallback>
-                      {testimonial.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="font-semibold">{testimonial.name}</div>
-                    <div className="text-sm text-muted-foreground">{testimonial.role}</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       </div>

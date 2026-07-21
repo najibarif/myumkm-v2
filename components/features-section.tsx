@@ -1,5 +1,8 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+"use client";
+
+import { useEffect, useRef } from "react";
 import { Zap, Users, Lightbulb, Banknote, Heart, BarChart3, Bot, BookOpen } from "lucide-react"
+import { animate, inView, stagger, hover } from "motion";
 
 const features = [
   {
@@ -45,33 +48,86 @@ const features = [
 ]
 
 export function FeaturesSection() {
+  const containerRef = useRef<HTMLElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    try {
+      if (containerRef.current) {
+        const featureItems = Array.from(containerRef.current.querySelectorAll(".feature-item"));
+        const headerElements = containerRef.current.querySelectorAll('.feature-header-anim');
+
+        // Initial state
+        featureItems.forEach(item => {
+          (item as HTMLElement).style.opacity = '0';
+          (item as HTMLElement).style.transform = 'rotateY(-90deg)';
+        });
+        headerElements.forEach(el => {
+          (el as HTMLElement).style.opacity = '0';
+          (el as HTMLElement).style.transform = 'scale(0.9)';
+        });
+
+        inView(containerRef.current, () => {
+          // Animate header - Scale up reveal
+          if (headerElements.length) {
+            animate(headerElements,
+              { opacity: [0, 1], scale: [0.9, 1] },
+              { duration: 1, type: "spring", stiffness: 100 }
+            );
+          }
+
+          // Animate items - 3D Card Flip (rotateY)
+          if (featureItems.length) {
+            animate(featureItems,
+              { opacity: [0, 1], rotateY: [-90, 0] },
+              { delay: stagger(0.1), duration: 1, type: "spring", stiffness: 120, damping: 20 }
+            );
+          }
+        }, { margin: "-100px" });
+
+        // Minimal hover interactions
+        featureItems.forEach(item => {
+          hover(item, () => {
+            animate(item, { scale: 1.05, zIndex: 10 }, { type: "spring", stiffness: 300, damping: 20 });
+            return () => animate(item, { scale: 1, zIndex: 1 }, { type: "spring", stiffness: 300, damping: 20 });
+          });
+        });
+      }
+    } catch (e) {
+      if (containerRef.current) {
+        const featureItems = containerRef.current.querySelectorAll(".feature-item");
+        featureItems.forEach(item => {
+          (item as HTMLElement).style.opacity = '1';
+          (item as HTMLElement).style.transform = 'none';
+        });
+      }
+    }
+  }, []);
+
   return (
-    <section className="py-16 md:py-24 lg:py-32">
-      <div className="container px-4">
-        <div className="text-center space-y-4 mb-16">
-          <div className="inline-flex items-center rounded-full border px-3 py-1 text-sm bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
-            ✨ Fitur Unggulan
-          </div>
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">Semua yang Anda Butuhkan</h2>
-          <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-            Platform lengkap dengan fitur-fitur canggih yang dirancang khusus untuk membantu UMKM berkembang pesat di
-            era digital.
+    <section ref={containerRef} className="py-24 lg:py-32 bg-background border-t border-border overflow-hidden" style={{ perspective: "1200px" }}>
+      <div className="container px-4 md:px-8 max-w-6xl mx-auto">
+        <div className="flex flex-col md:flex-row gap-12 md:gap-8 mb-20 justify-between items-start">
+          <h2 ref={titleRef} className="feature-header-anim text-4xl md:text-5xl font-bold tracking-tight max-w-md opacity-0">
+            Kemampuan luar biasa.
+          </h2>
+          <p className="feature-header-anim text-lg text-muted-foreground max-w-lg leading-relaxed opacity-0">
+            Dari otomasi pemasaran hingga analisis kompetitor. 
+            Semuanya dirancang agar Anda bisa fokus pada hal yang paling penting: mengembangkan bisnis.
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-16">
           {features.map((feature, index) => (
-            <Card key={index} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-              <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <feature.icon className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle className="text-lg">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-sm leading-relaxed">{feature.description}</CardDescription>
-              </CardContent>
-            </Card>
+            <div key={index} className="feature-item group flex flex-col items-start opacity-0 bg-card p-6 border border-border/50 rounded-2xl relative" style={{ transformOrigin: "left center" }}>
+              <div className="mb-6 feature-icon text-blue-600 transition-colors duration-300">
+                <feature.icon className="h-7 w-7" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">{feature.title}</h3>
+              <p className="text-muted-foreground leading-relaxed text-sm">
+                {feature.description}
+              </p>
+            </div>
           ))}
         </div>
       </div>
